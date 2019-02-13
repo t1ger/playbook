@@ -1,0 +1,56 @@
+- name: create hdfs_group on all machines
+  group: name={{ item.groupname }} gid={{ item.gid }} state=present
+  with_items:
+  - { groupname: '{{ hdfs_user }}',   gid: '1000' }
+  - { groupname: '{{ hdfs_group }}',  gid: '1001' }
+  - { groupname: '{{ yarn_user }}',   gid: '1002' }
+  - { groupname: '{{ mapred_user }}', gid: '1003' }
+  tags: 
+    - hadoop
+    - hadoop_setup
+    
+- name: Add hdfs_user on first namenode only and generate an ssh key
+  user: name={{ hdfs_user }} comment="Hadoop HDFS"  group={{ hdfs_group }} uid=1000 home={{ hdfs_user_home }}  createhome=yes generate_ssh_key="{{ hdfs_ssh_fence }}"
+  when: inventory_hostname == hdfs_namenodes[0]
+  tags: 
+    - hadoop
+    - hadoop_setup
+    
+    
+- name: create user on all machines
+  user: name={{ item.user }} comment={{ item.ct }} uid={{ item.uid }} group={{item.group}} groups="{{ hdfs_group }}" home={{ item.home }} createhome=yes shell=/bin/bash state=present
+  with_items:
+  -  { user: '{{ hdfs_user }}', group: '{{ hdfs_user }}', uid: '1000', ct: 'Hadoop HDFS',  home: '{{ hdfs_user_home }}' }
+  -  { user: '{{ yarn_user }}',  group: '{{ yarn_user }}', uid: '1001', ct: 'Hadoop Yarn', home: '{{ yarn_user_home }}' }
+  -  { user: '{{ mapred_user }}', group: '{{ mapred_user }}', uid: '1002', ct: 'Hadoop MapReduce', home: '{{ mapred_user_home }}' }
+  register: created_user
+  tags: 
+    - hadoop
+    - hadoop_setup
+
+- name: create directory if not exist
+  file: path=/etc/sysctl.d state=directory mode=0755 owner=root group=root
+  tags: 
+    - hadoop
+    - hadoop_setup
+
+- name: write sysctl config file to /etc/sysctl.d/60-hadoop.conf
+  template: src=sysctl.conf dest=/etc/sysctl.d/60-hadoop.conf owner=root group=root mode=0644
+  notify:
+    - restart procps
+  tags:
+    - hadoop
+    - hadoop_setup
+
+- name: configure /etc/security/limits.conf with high max file descriptors (soft/hard)
+  template: src=limits.conf dest=/etc/security/limits.d/60-limits.conf mode=0644
+  tags:
+    - hadoop
+    - hadoop_setup
+
+
+- include: ssh_fence.yml
+  when: hdfs_ssh_fence and inventory_hostname in hdfs_namenodes
+  tags: 
+    - hadoop
+    - hadoop_setup

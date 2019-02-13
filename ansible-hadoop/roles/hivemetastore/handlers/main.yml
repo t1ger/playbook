@@ -1,0 +1,17 @@
+- name: Reload systemd daemon
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd"
+
+- name: Restart hive-metastore
+  service: name=hive-metastore state=restarted
+#  command: service hbase-master restart
+  when:
+   - inventory_hostname in hive_metastore
+   - hadoop.ansible_handlers|bool
+
+- name: Restart hive-server2
+  service: name=hive-server2 state=restarted
+#  command: service hbase-regionserver restart
+  when:
+   - inventory_hostname in hive_metastore
+   - hadoop.ansible_handlers|bool

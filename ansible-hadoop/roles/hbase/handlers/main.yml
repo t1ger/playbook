@@ -1,0 +1,17 @@
+- name: Reload systemd daemon
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd"
+
+- name: Restart HMaster
+#  service: name=hbase-master state=restarted
+  command: service hbase-master restart
+  when:
+   - inventory_hostname in hbase_master
+   - hadoop.ansible_handlers|bool
+
+- name: Restart HRegion
+#  service: name=hbase-regionserver state=restarted
+  command: service hbase-regionserver restart
+  when:
+   - inventory_hostname in hbase_region
+   - hadoop.ansible_handlers|bool

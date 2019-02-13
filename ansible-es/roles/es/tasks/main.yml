@@ -1,0 +1,54 @@
+--- 
+- set_fact:
+    es_package_name: elasticsearch-{{ es.version }}.rpm
+  tags: 
+    - es
+    - es_installation
+
+- name: check es package
+  stat: path={{ package_download_path }}/{{ es_package_name }}
+  register: es_package_exists
+  tags:
+    - es
+    - es_installation
+
+- name: download es rpm if not downloaded
+  get_url: url={{ es.download_mirror }}/{{ es_package_name }} dest={{ package_download_path }}
+  when: not es_package_exists.stat.exists 
+  tags: 
+    - es
+    - es_installation
+
+
+- name: delete package downloaded if needed
+  file: path={{ package_download_path }}/{{ es_package_name }} state=absent
+  when: force_cleanup is defined and force_cleanup == "True"
+  tags:
+    - es
+    - es_installation
+
+- name: install elasticsearch rpm package
+  yum : name={{ package_download_path }}/{{ es_package_name }} state=present
+  register: es_install_from_package
+  notify: restart elasticsearch
+  tags:
+    - es
+    - es_installation
+
+- name: configure /etc/security/limits.d/60-limits.conf with high max file descriptors (soft/hard)
+  template: src=limits.conf dest=/etc/security/limits.d/60-limits.conf mode=0644
+  tags:
+    - es
+    - es_installation
+
+- name: set es configuration
+  template: src=templates/elasticsearch.yml.j2 dest={{ es.config_path }}/elasticsearch.yml
+  notify: restart elasticsearch
+  tags: 
+    - es
+    - es_config
+
+- name: enable elasticsearch service
+  service: name=elasticsearch enabled=yes state=started
+  tags:
+  - es

@@ -1,0 +1,16 @@
+[Unit]
+Description=Yarn {{ program }}
+
+[Service]
+Type=forking
+User={{ yarn_user }}
+Group={{ hdfs_group }}
+ExecStart={{ hdfs_hadoop_home }}/sbin/yarn-daemon.sh start {{ program }}
+ExecStop={{ hdfs_hadoop_home }}/sbin/yarn-daemon.sh  stop {{ program }}
+RemainAfterExit=no
+PIDFile=$HADOOP_PID_DIR/hadoop-yarn-{{program}}.pid
+
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

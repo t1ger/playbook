@@ -1,0 +1,54 @@
+- name: Reload systemd daemon
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd"
+
+- name: Restart namenode
+  service: name=hdfs-namenode state=restarted
+  when:
+   - inventory_hostname in hdfs_namenodes
+   - hadoop.ansible_handlers|bool
+
+- name: Restart datanode
+  service: name=hdfs-datanode state=restarted
+  when:
+   - inventory_hostname in hdfs_datanodes
+   - hadoop.ansible_handlers|bool
+
+- name: Restart journalnode
+  service: name=hdfs-journalnode state=restarted
+  when:
+   - hdfs_ha_enabled
+   - inventory_hostname in hdfs_journalnodes
+   - hadoop.ansible_handlers|bool
+
+- name: Restart zkfc
+  service: name=hdfs-zkfc state=restarted
+  when:
+   - hdfs_ha_enabled
+   - inventory_hostname in hdfs_namenodes
+   - hadoop.ansible_handlers|bool
+
+- name: Restart secondary namenode
+  service: name=hdfs-secondarynamenode state=restarted
+  when:
+   - not hdfs_ha_enabled
+   - inventory_hostname in  hdfs_secondary_namenode
+   - hadoop.ansible_handlers|bool
+
+- name: Restart resoucemanager
+  service: name=yarn-resourcemanager state=restarted
+  when:
+   - inventory_hostname in hdfs_resourcemanager
+   - hadoop.ansible_handlers|bool
+
+- name: Restart nodemanager
+  service: name=yarn-nodemanager state=restarted
+  when:
+   - inventory_hostname in hdfs_resourcemanager
+   - hadoop.ansible_handlers|bool
+
+- name: restart procps
+  service: name=procps state=restarted
+
+- name: restart NetworkManager 
+  service: name=NetworkManager state=restarted 

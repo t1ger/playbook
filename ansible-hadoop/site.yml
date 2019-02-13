@@ -1,0 +1,27 @@
+---
+- name: Hadoop nodes setup
+#  strategy: debug
+  hosts: hadoop
+  become: true
+  roles:
+    - java
+    - hadoop
+
+- name: HBase nodes setup
+#  strategy: debug
+  hosts: hbase
+  become: true
+  roles:
+#    - java
+    - zookeeper
+    - hbase 
+
+- name: Hive nodes setup
+#  strategy: debug
+  hosts: hive
+  become: true
+  roles:
+#    - java
+    - zookeeper
+    - hivemetastore 
+ 

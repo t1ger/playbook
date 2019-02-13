@@ -1,0 +1,7 @@
+---
+- hosts: es_servers 
+  become: true
+  roles:
+#    - firewall
+    - java
+    - es

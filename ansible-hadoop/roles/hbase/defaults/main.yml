@@ -1,0 +1,69 @@
+---
+#------------------------------------------------------------------------------
+# General cluster settings
+#------------------------------------------------------------------------------
+
+hbase_user: hbase
+hbase_group: hadoop
+hbase_user_home: "/var/lib/hadoop-{{ hbase_user }}"
+
+hdfs_nameservices: cluster1
+
+# Setting this to true causes the entire cluster to be started in secure mode,
+# all services will require a kerberos ticket to allow access and all http uis
+# will only work over https. 
+SECURITY_ENABLED: false
+
+# multi master 
+HBASE_MODE: "backup"
+
+
+# Use ansible handlers?
+hdfs_ansible_handlers: True
+
+
+#------------------------------------------------------------------------------
+# hbase host variables
+#------------------------------------------------------------------------------
+hbase_master: "{{ groups.hbase_master }}"
+hbase_region: "{{ groups.datanodes }}"
+hbase_backupmaster: "{{ groups.hbase_backup_masters }}"
+hbase_thrift: "{{ groups.hbase_thrift }}"
+hbase_rest: "{{ groups.hbase_rest }}"
+
+
+#------------------------------------------------------------------------------
+# HA specific setup
+#------------------------------------------------------------------------------
+hbase_ha_enabled: "{{ hbase_backupmaster | count > 1}}"
+
+
+#------------------------------------------------------------------------------
+# Hbase configuration
+#------------------------------------------------------------------------------
+
+# Symlink for hbase to the version you are installing
+hbase_home: "{{ hbase.installation_path }}/hbase"
+hbase_conf_dir: "{{hbase_home}}/conf"
+hbase_bin_dir: "{{hbase_home}}/bin"
+hbase_log_dir: /var/log/hbase
+hbase_tmpdir: "/tmp"
+
+
+#------------------------------------------------------------------------------
+# Extended hbase-site.xml
+#------------------------------------------------------------------------------
+hbase_cluster_distributed: true
+hbase_bucketcache_size: 1024
+hfile_block_cache_size: 0.2
+
+#--------------------------------------------------------------
+#  Phoenix related settings
+#-------------------------------------------------------------
+phoenix_schema_isNamespaceMappingEnabled: true
+
+#--------------------------------------------------------------
+#  THRIFT related settings
+#-------------------------------------------------------------
+HBASE_THRIFT_VERSION: "2"
+

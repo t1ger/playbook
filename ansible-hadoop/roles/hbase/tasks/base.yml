@@ -1,0 +1,113 @@
+---
+- set_fact:
+    hbase_package_name: hbase-{{ hbase.version }}-bin.tar.gz
+    hbase_application_path: "{{ hbase.installation_path }}/hbase-{{ hbase.version }}"
+  tags: 
+    - hbase
+    - hbase_installation
+
+- name: check hbase package
+  stat: path={{ package_download_path }}/{{ hbase_package_name }}
+  register: hbase_package_exists
+  tags:
+    - hbase
+    - hbase_installation
+# download only in the ansible master node
+- name: download hbase tar if not downloaded
+  get_url: url={{ hbase.download_mirror }}/{{ hbase.version }}/{{ hbase_package_name }} dest={{ package_download_path }}
+  register: result
+  until: result|success
+  retries: 5
+  delay: 2
+  when: not hbase_package_exists.stat.exists
+  tags: 
+    - hbase
+    - hbase_installation
+
+# other nodes wait for it
+#- local_action: wait_for path={{ package_download_path }}/{{ hbase_package_name }}
+#  when: not groups.namenodes
+#  tags: hbase
+
+
+#- copy: src={{ package_download_path }}/{{ hbase_package_name }} dest={{ package_download_path }}/{{ hbase_package_name }} force=no
+#  tags: hbase
+
+- name: unarchive hbase package
+  unarchive: src={{ package_download_path }}/{{ hbase_package_name }} dest={{ hbase.installation_path }} copy=no 
+  tags: 
+    - hbase
+    - hbase_installation
+
+- name: delete package downloaded if needed
+  file: path={{ package_download_path }}/{{ hbase_package_name }} state=absent
+  when: force_cleanup is defined and force_cleanup == "True"
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: create softlink for apache hbase
+  file: src={{ hbase.installation_path }}/hbase-{{ hbase.version }} dest={{ hbase.installation_path }}/hbase state=link
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: Create folder /etc/hbase
+  file: path=/etc/hbase state=directory owner={{ hbase_user }} group={{ hbase_group }}
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: Create hbase link for conf to /etc/hbase
+  file: src={{ hbase_conf_dir }} dest=/etc/hbase/conf owner={{ hbase_user }} group={{ hbase_group }} state=link
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: Create link for hbase to /usr/local/bin
+  file: src={{ hbase_bin_dir }}/hbase dest=/usr/local/bin/hbase owner={{ hbase_user }} group={{ hbase_group }} mode=0755 state=link
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: Export hbase variables
+  copy: content="export HBASE_HOME={{ hbase.installation_path}}/hbase-{{ hbase.version }}" dest="/etc/profile.d/hbase_exports.sh" mode=0755
+  tags:
+    - hbase
+    - hbase_installation
+
+
+- name: Create hbase log dir
+  file: path={{ hbase_log_dir }} state=directory owner={{ hbase_user }} group={{ hbase_group }} mode=0755
+  tags:
+    - hbase
+    - hbase_installation
+
+- name: Put HBase configuration in place
+  template: src={{ item.src }} dest={{ item.dest }} backup=no owner={{ hbase_user }} group={{ hbase_group }} mode=0644
+  with_items:
+    - { src: 'hbase-env.sh.j2', dest: '{{ hbase_conf_dir }}/hbase-env.sh' }
+    - { src: 'regionservers.j2', dest: '{{ hbase_conf_dir }}/regionservers' }
+    - { src: 'backup-masters.j2', dest: '{{ hbase_conf_dir }}/backup-masters' }
+    - { src: 'hbase-site.xml.j2', dest: '{{ hbase_conf_dir }}/hbase-site.xml' }
+  notify:
+   - Restart HMaster
+   - Restart HRegion
+  tags:
+   - hbase
+   - hbase_configuration
+
+- name: create hdfs directories
+  become: yes
+  become_method: su
+  become_flags: "-s /bin/bash"
+  become_user: "hdfs"
+  command: hdfs dfs {{ item }}
+  when: inventory_hostname in hdfs_namenodes
+  with_items:
+    - -mkdir -p /hbase
+    - -chown -R hbase:hbase /hbase 
+  tags:
+    - hbase
+    - hbase_pre
+ 

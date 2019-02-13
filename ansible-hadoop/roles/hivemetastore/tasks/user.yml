@@ -1,0 +1,17 @@
+- name: create hive_group on all machines
+  group: name={{ item.groupname }} gid={{ item.gid }} state=present
+  with_items:
+  - { groupname: '{{ hive_group }}',  gid: '1001' }
+  - { groupname: '{{ hive_user }}', gid: '1006' }
+  tags: 
+    - hive
+    - hive_user
+      
+- name: create user on all machines
+  user: name={{ item.user }} comment={{ item.ct }} uid={{ item.uid }} group={{item.group}} groups="{{ hive_group }}" home={{ item.home }} createhome=yes shell=/bin/bash state=present
+  with_items:
+  -  { user: '{{ hive_user }}', group: '{{ hive_user }}', uid: '1005', ct: 'Hadoop hive', home: '{{ hive_user_home }}' }
+  register: created_user
+  tags: 
+    - hive
+    - hive_user

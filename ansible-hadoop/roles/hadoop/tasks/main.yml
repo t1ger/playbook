@@ -1,0 +1,68 @@
+---
+  - name: Include user tasks.
+    include: user.yml
+    tags:
+      - user
+      - hadoop
+  
+  - name: Include common tasks.
+    include: base.yml
+    tags:
+      - base
+      - hadoop
+
+  - name: Include tasks for namenode.
+    include: namenode.yml
+    when: inventory_hostname in  hdfs_namenodes
+    tags:
+      - namenode
+      - hadoop
+   
+  - name: Include task for datanode.
+    include: datanode.yml
+    when: inventory_hostname in hdfs_datanodes
+    tags: 
+      - datanode
+      - hadoop
+  
+  - name: Include task for secondarynamenode.
+    include: secondarynamenode.yml
+    when: inventory_hostname in hdfs_secondary_namenode and not hdfs_ha_enabled
+    tags: 
+      - secondarynamenode
+      - hadoop
+
+  - name: Include task for journalnode
+    include: journalnode.yml
+    when: inventory_hostname in hdfs_journalnodes  and hdfs_ha_enabled
+    tags: 
+      - journalnode
+      - hadoop
+    
+  - name: Include task for yarn-resourcemanager
+    include: resourcemanager.yml
+    when: inventory_hostname in hdfs_resourcemanager
+    tags: 
+      - resourcemanager
+      - hadoop
+  
+  - name: Include task for yarn-nodemanager
+    include: nodemanager.yml
+    when: inventory_hostname in hdfs_nodemanager
+    tags: 
+      - nodemanager
+      - hadoop
+
+  - name: Include task for bootstrap and not ha
+    include: bootstrap_spof.yml
+    when: hdfs_bootstrap and not hdfs_ha_enabled
+    tags: 
+      - bootstrap
+      - hadoop
+        
+  - name: Include task for bootstrap and ha
+    include: bootstrap_ha.yml
+    when: hdfs_bootstrap and hdfs_ha_enabled
+    tags: 
+      - bootstrap
+      - hadoop

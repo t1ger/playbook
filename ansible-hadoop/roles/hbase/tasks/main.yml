@@ -1,0 +1,40 @@
+---
+  - name: Include user tasks.
+    include: user.yml
+    tags:
+      - user
+      - hbase
+  
+  - name: Include common tasks.
+    include: base.yml
+    tags:
+      - base
+      - hbase
+
+  - name: Include tasks for hmaster.
+    include: hmaster.yml
+    when: inventory_hostname in  hbase_master
+    tags:
+      - hbase-master
+      - hbase
+      
+  - name: Include tasks for Thrift.
+    include: hbase-thrift.yml
+    when: inventory_hostname in hbase_master
+    tags:
+      - hbase-thrift
+      - hbase
+      
+  - name: Include tasks for REST.
+    include: hbase-rest.yml
+    when: inventory_hostname in hbase_master
+    tags:
+      - hbase-rest
+      - hbase
+   
+  - name: Include task for hbase regionserver.
+    include: regionserver.yml
+    when: inventory_hostname in hbase_region and groups['hbase_master']|count == 1
+    tags: 
+      - hbase-regionserver
+      - hbase

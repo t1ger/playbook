@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+### BEGIN INIT INFO
+# Provides:          hive-{{program}}
+# Required-Start:    $remote_fs $network
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start hive-{{program}} daemon
+# Description: Start hive-{{program}} daemon
+### END INIT INFO
+
+HIVE_HOME={{ hive_home }}
+HIVE_CONF_DIR={{ hive_conf_dir }}
+
+. $HIVE_CONF_DIR/hive-env.sh
+
+HIVE_PID_DIR=${HIVE_PID_DIR:-/var/run/}
+NAME="hive-{{program}}"
+PIDFILE="$HIVE_PID_DIR/hadoop-${NAME}.pid"
+
+#. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+        sudo su - {{hive_user}} -c "setsid $HIVE_HOME/bin/hiveserver2 >/var/log/hive/hiveserver2.out 2> /var/log/hive/hiveserver2.log &"
+        ;;
+  stop)
+        sudo su - {{hive_user}} -c "kill -9 `ps -ef | grep hiveserver2 | grep -v grep | awk '{print $2}'` 2>/dev/null 1>&2"
+        ;;
+  status)
+        status_of_proc -p $PIDFILE "$NAME" "$NAME" && exit 0 || exit $?
+        ;;
+  restart)
+        sudo su - {{hive_user}} -c "kill -9 `ps -ef | grep hiveserver2 | grep -v grep | awk '{print $2}'` 2>/dev/null 1>&2"
+        sudo su - {{hive_user}} -c "setsid $HIVE_HOME/bin/hiveserver2 >/var/log/hive/hiveserver2.out 2> /var/log/hive/hiveserver2.log &"
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit 0

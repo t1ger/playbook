@@ -1,0 +1,29 @@
+---   
+- name: Set program variable to 'metastore'
+  set_fact: program="metastore"
+  
+- name: Deploy init.d service for hive-metastore
+  template: src=hive-service.j2 dest=/etc/init.d/hive-metastore owner=root group=root mode=0755
+  when: ansible_service_mgr != "systemd"
+
+- name: Deploy systemd service for hive-metastore
+  template: src=hive.service.j2 dest=/lib/systemd/system/hive-metastore.service owner=root group=root mode=0644
+  register: hive-metastore_systemd_unit_altered
+  when: ansible_service_mgr == "systemd"
+  
+ # daemon-reload cannot be sent to handler because it is needed before the end of play
+# also, we cannot use flush_handlers before the end of play, because we have other handlers
+- name: Reload systemd daemon
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd" and ( hive-metastore_systemd_unit_altered.changed )
+  tags:
+    - skip_ansible_lint
+
+- name: Register hive-metastore service
+  service: name=hive-metastore enabled=yes
+
+- name: Initialize Hive metadata store schema
+  shell: ". {{ hdfs_conf_dir }}/hadoop-env.sh && {{ hive_home }}/bin/schematool -dbType mysql -initSchema"
+  become_user: "{{ hive_user }}"
+  when: inventory_hostname in  hive_metastore
+  run_once: true

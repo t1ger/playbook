@@ -1,0 +1,40 @@
+---
+#------------------------------------------------------------------------------
+# General cluster settings
+#------------------------------------------------------------------------------
+
+hive_user: hive
+hive_group: hadoop
+hive_user_home: "/var/lib/hadoop-{{ hive_user }}"
+
+
+# Use ansible handlers?
+hdfs_ansible_handlers: True
+
+
+#------------------------------------------------------------------------------
+# hive host variables
+#------------------------------------------------------------------------------
+hive_metastore: "{{ groups.hivemetastore }}"
+hive_client: "{{ groups.datanodes }}"
+hive_mysql: "{{ groups.mysql }}"
+
+
+#------------------------------------------------------------------------------
+# Hbase configuration
+#------------------------------------------------------------------------------
+
+# Symlink for hbase to the version you are installing
+hive_home: "{{ hive.installation_path }}/hive"
+hive_conf_dir: "{{hive_home}}/conf"
+hive_bin_dir: "{{hive_home}}/bin"
+hive_log_dir: /var/log/hive
+hive_tmpdir: "/tmp"
+
+
+#------------------------------------------------------------------------------
+#  hive-site.xml
+#------------------------------------------------------------------------------
+hive_ConnectionDriverName: "com.mysql.jdbc.Driver"
+hive_db_user: hive
+hive_db_password: hive

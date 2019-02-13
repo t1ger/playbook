@@ -1,0 +1,27 @@
+---
+  - name: Include user tasks.
+    include: user.yml
+    tags:
+      - user
+      - hive
+  
+  - name: Include common tasks.
+    include: base.yml
+    tags:
+      - base
+      - hive
+
+  - name: Include tasks for hivemetastore.
+    include: hive-service.yml
+    when: inventory_hostname in  hive_metastore
+    tags:
+      - hive-metastore
+      - hive
+      
+  - name: Include tasks for clients.
+    include: hive-server2.yml
+    when: inventory_hostname in  hive_metastore
+    tags:
+      - hive-server2
+      - hive
+     

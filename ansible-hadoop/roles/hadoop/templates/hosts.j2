@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+{% for item in groups.allnodes %}
+{% set short_name = hostvars[item].host_name.split('.') %}
+{{ hostvars[item].inventory_hostname }}  {{ hostvars[item].host_name }} {{ short_name[0] }}
+{% endfor %}
+

@@ -1,0 +1,7 @@
+package_download_path : "/tmp"
+hive:
+  version: 2.3.2
+  installation_path: /usr/local
+  download_mirror: http://apache.rediris.es/hive
+  configuration:
+    port: 9000	

@@ -1,0 +1,19 @@
+package_download_path : "/tmp"
+hadoop:
+  version: 2.9.0
+  installation_path: /usr/local
+  download_mirror: http://apache.rediris.es/hadoop/common
+  ansible_handlers: True
+  configuration:
+  
+zookeeper:
+  version: 3.4.10
+  installation_path: /usr/local
+  download_mirror: http://apache.rediris.es/zookeeper
+  configuration:
+    port: 2181
+    log_path: /var/log/zookeeper
+    data_dir: /var/lib/zookeeper
+    tick_time: 2000 
+    init_limit: 5
+    sync_limit: 2

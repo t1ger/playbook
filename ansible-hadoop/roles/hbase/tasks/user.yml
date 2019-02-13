@@ -1,0 +1,17 @@
+- name: create hbase_group on all machines
+  group: name={{ item.groupname }} gid={{ item.gid }} state=present
+  with_items:
+  - { groupname: '{{ hbase_group }}',  gid: '1001' }
+  - { groupname: '{{ hbase_user }}', gid: '1004' }
+  tags: 
+    - hbase
+    - hbase_user
+      
+- name: create user on all machines
+  user: name={{ item.user }} comment={{ item.ct }} uid={{ item.uid }} group={{item.group}} groups="{{ hbase_group }}" home={{ item.home }} createhome=yes shell=/bin/bash state=present
+  with_items:
+  -  { user: '{{ hbase_user }}', group: '{{ hbase_user }}', uid: '1003', ct: 'Hadoop hbase', home: '{{ hbase_user_home }}' }
+  register: created_user
+  tags: 
+    - hbase
+    - hbase_user

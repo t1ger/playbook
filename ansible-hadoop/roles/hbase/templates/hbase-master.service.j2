@@ -1,0 +1,19 @@
+[Unit]
+Description=HBASE {{ program }}
+Before=
+After=network.target
+
+
+[Service]
+Type=forking
+User={{ hbase_user }}
+Group={{ hbase_group }}
+ExecStart={{ hbase_home }}/bin/hbase-daemon.sh --config {{ hbase_conf_dir }}  start {{ program }} {% if HBASE_MODE == "backup" %} --backup{% endif %}
+ExecStop={{ hbase_home }}/bin/hbase-daemon.sh --config {{ hbase_conf_dir }} stop {{ program }}
+RemainAfterExit=no
+PIDFile=$HBASE_PID_DIR/hadoop-hbase-{{program}}.pid
+
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

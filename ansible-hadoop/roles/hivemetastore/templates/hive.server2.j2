@@ -1,0 +1,16 @@
+[Unit]
+Description=HIVE {{ program }}
+Before=
+After=network.target
+
+
+[Service]
+Type=forking
+User={{ hive_user }}
+Group={{ hive_group }}
+ExecStart={{ hive_home }}/bin/hiveserver2 
+Restart=on-abort
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

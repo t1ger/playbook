@@ -1,0 +1,136 @@
+---
+- set_fact:
+    hive_package_name: apache-hive-{{ hive.version }}-bin.tar.gz
+    hive_application_path: "{{ hive.installation_path }}/hive-{{ hive.version }}"
+  tags: 
+    - hive
+    - hive_installation
+
+- name: check hive package
+  stat: path={{ package_download_path }}/{{ hive_package_name }}
+  register: hive_package_exists
+  tags:
+    - hive
+    - hive_installation
+    
+# download only in the ansible master node
+- name: download hive tar if not downloaded
+  get_url: url={{ hive.download_mirror }}/hive-{{ hive.version }}/{{ hive_package_name }} dest={{ package_download_path }}
+  register: result
+  until: result|success
+  retries: 5
+  delay: 2
+  when: not hive_package_exists.stat.exists
+  tags: 
+    - hive
+    - hive_installation
+
+# other nodes wait for it
+#- local_action: wait_for path={{ package_download_path }}/{{ hive_package_name }}
+#  when: not groups.namenodes
+#  tags: hive
+
+
+#- copy: src={{ package_download_path }}/{{ hive_package_name }} dest={{ package_download_path }}/{{ hive_package_name }} force=no
+#  tags: hive
+
+- name: unarchive hive package
+  unarchive: src={{ package_download_path }}/{{ hive_package_name }} dest={{ hive.installation_path }} copy=no 
+  tags: 
+    - hive
+    - hive_installation
+
+- name: delete package downloaded if needed
+  file: path={{ package_download_path }}/{{ hive_package_name }} state=absent
+  when: force_cleanup is defined and force_cleanup == "True"
+  tags:
+    - hive
+    - hive_installation
+
+- name: create softlink for apache hive
+  file: src={{ hive.installation_path }}/apache-hive-{{ hive.version }}-bin dest={{ hive.installation_path }}/hive state=link
+  tags:
+    - hive
+    - hive_installation
+
+- name: Create folder /etc/hive
+  file: path=/etc/hive state=directory owner={{ hive_user }} group={{ hive_group }}
+  tags:
+    - hive
+    - hive_installation
+
+- name: Create hive link for conf to /etc/hive
+  file: src={{ hive_conf_dir }} dest=/etc/hive/conf owner={{ hive_user }} group={{ hive_group }} state=link
+  tags:
+    - hive
+    - hive_installation
+
+- name: Create link for hive to /usr/local/bin
+  file: src={{ hive_bin_dir }}/hive dest=/usr/local/bin/hive owner={{ hive_user }} group={{ hive_group }} mode=0755 state=link
+  tags:
+    - hive
+    - hive_installation
+
+- name: Export hive variables
+  copy: content="export HIVE_HOME={{ hive.installation_path}}/hive\nexport HIVE_CONF_DIR={{ hive_conf_dir }}" dest="/etc/profile.d/hive_exports.sh" mode=0755
+  tags:
+    - hive
+    - hive_installation
+
+
+- name: Create hive log dir
+  file: path={{ hive_log_dir }} state=directory owner={{ hive_user }} group={{ hive_group }} mode=0755
+  tags:
+    - hive
+    - hive_installation
+    
+    
+- name: set limits for hive user
+  template: src=hive.limits.conf.j2 dest=/etc/security/limits.d/hive.conf
+  tags:
+   - hive
+   - hive_configuration
+  
+
+- name: Put hive configuration in place
+  template: src={{ item.src }} dest={{ item.dest }} backup=no owner={{ hive_user }} group={{ hive_group }} mode=0644
+  with_items:
+    - { src: 'hive-env.sh.j2', dest: '{{ hive_conf_dir }}/hive-env.sh' }
+    - { src: 'hive-site.xml.j2', dest: '{{ hive_conf_dir }}/hive-site.xml' }
+    - { src: 'hive-log4j.properties', dest: '{{ hive_conf_dir }}/hive-log4j.properties' }
+    - { src: 'hive-exec-log4j.properties', dest: '{{ hive_conf_dir }}/hive-exec-log4j.properties' }
+  notify:
+   - Restart hive-metastore
+   - Restart hive-server2
+  tags:
+   - hive
+   - hive_configuration
+   
+- name: copy hive-site.xml to hdfs
+  become: yes
+  become_method: su
+  become_flags: "-s /bin/bash"
+  become_user: "hdfs"
+  command: hdfs dfs {{ item }}
+  when: inventory_hostname in hdfs_namenodes
+  with_items:
+    - -mkdir -p /etc/hive/conf
+    - -copyFromLocal -f {{ hive_conf_dir }}/hive-site.xml /etc/hive/conf
+  tags:
+   - hive
+   - hive_configuration
+    
+
+- name: create warehouse dir
+  become: yes
+  become_method: su
+  become_flags: "-s /bin/bash"
+  become_user: "hdfs"
+  command: hdfs dfs {{ item }}
+  with_items:
+    - -mkdir -p /user/hive/warehouse
+    - -chmod 1777 /user/hive
+    - -chmod 1777 /user/hive/warehouse
+  tags:
+   - hive
+   - hive_configuration

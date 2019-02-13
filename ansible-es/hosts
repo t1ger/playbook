@@ -1,0 +1,5 @@
+# These are your elasticsearch cluster nodes
+[es_servers]
+172.16.56.240  es_node_id=1 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.242  es_node_id=2 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.244  es_node_id=3 ansible_ssh_user=root ansible_ssh_pass="password"

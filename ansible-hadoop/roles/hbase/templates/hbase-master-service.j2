@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+### BEGIN INIT INFO
+# Provides:          hbase-{{program}}
+# Required-Start:    $remote_fs $network
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start hbase-{{program}} daemon
+# Description: Start hbase-{{program}} daemon
+### END INIT INFO
+
+HBASE_HOME={{ hbase_home }}
+HBASE_CONF_DIR={{ hbase_conf_dir }}
+
+. $HBASE_CONF_DIR/hbase-env.sh
+
+HBASE_PID_DIR=${HBASE_PID_DIR:-/var/run/}
+NAME="hbase-{{program}}"
+PIDFILE="$HBASE_PID_DIR/hadoop-${NAME}.pid"
+
+#. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+        sudo su - {{hbase_user}} -c "$HBASE_HOME/bin/hbase-daemon.sh --config $HBASE_CONF_DIR start {{program}}"
+        ;;
+  stop)
+        sudo su - {{hbase_user}} -c "$HBASE_HOME/bin/hbase-daemon.sh --config $HBASE_CONF_DIR stop {{program}}"
+        ;;
+  status)
+        status_of_proc -p $PIDFILE "$NAME" "$NAME" && exit 0 || exit $?
+        ;;
+  restart)
+        sudo su - {{hbase_user}} -c "$HBASE_HOME/bin/hbase-daemon.sh --config $HBASE_CONF_DIR  stop {{program}}"
+        sudo su - {{hbase_user}} -c "$HBASE_HOME/bin/hbase-daemon.sh --config $HBASE_CONF_DIR  start {{program}}"
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit 0

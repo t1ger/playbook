@@ -1,0 +1,128 @@
+#
+# All pre-prod nodes. 
+#
+[allnodes]
+172.16.56.240 host_name=namenode.local  ansible_ssh_host=172.16.56.240
+172.16.56.242 host_name=datanode01.local ansible_ssh_host=172.16.56.242
+172.16.56.244 host_name=datanode02.local ansible_ssh_host=172.16.56.244
+
+# at least one namenode is required, 2 allowed 
+# if 2, ha configured
+[namenodes]
+172.16.56.240  ansible_ssh_user=root ansible_ssh_pass="password"
+
+# at least one is required
+[datanodes]
+172.16.56.242  ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.244  ansible_ssh_user=root ansible_ssh_pass="password"
+
+# at least one is required
+# job history server will be also configured on the 1st host
+
+# at least one is required
+[yarnresourcemanager]
+
+# at least one is required
+[yarnnodemanager]
+
+
+# secondarynamenode
+[secondarynamenode]
+
+# optional 
+# required if 2 namenodes configured
+[journalnodes]
+
+# optional
+# required if hivemetastore, oozie or hue configured
+[postgresql]
+
+# optional
+# required if hivemetastore
+[mysql]
+172.16.56.240
+
+# optional
+# required if impala-store-catalog configured
+[hivemetastore]
+172.16.56.240  ansible_ssh_user=root ansible_ssh_pass="password"
+
+# optional
+[impala-store-catalog]
+
+# optional
+[hbase_master]
+172.16.56.240  ansible_ssh_user=root ansible_ssh_pass="password"
+
+# optional
+[hbase_backup_masters]
+
+# optional
+[hbase_rest]
+
+# optional
+[hbase_thrift]
+
+# optional
+[solr]
+
+# optional
+[spark]
+
+# optional
+[oozie]
+
+# optional
+[kafka]
+
+# optional
+[hue]
+
+# optional. comment this out completely or fill in a host into [dashboard]
+#[dashboard]
+[dashboard:children]
+namenodes
+
+# optional can be required for other service 3 or 5 hosts is required if 2 namenodes configured
+# These are your zookeeper cluster nodes
+[zk_servers]
+172.16.56.240 zk_id=1 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.242 zk_id=2 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.244 zk_id=3 ansible_ssh_user=root ansible_ssh_pass="password"
+
+
+# optional
+# can be required for other services
+# 3 or 5 hosts is required if 2 namenodes configured
+[zookeepernodes]
+
+
+#
+[hadoop:children]
+namenodes
+secondarynamenode
+datanodes
+journalnodes
+yarnresourcemanager
+hivemetastore
+impala-store-catalog
+solr
+spark
+oozie
+hue
+
+[hbase:children]
+hbase_master
+datanodes
+hbase_backup_masters
+hbase_rest
+hbase_thrift
+
+[hive:children]
+hivemetastore
+datanodes
+
+[java:children]
+hadoop
+kafka
+zookeepernodes

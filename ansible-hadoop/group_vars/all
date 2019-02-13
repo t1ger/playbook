@@ -1,0 +1,24 @@
+hdfs_namenodes: "{{ groups.namenodes }}"
+hdfs_ha_enabled: "{{hdfs_namenodes | count > 1}}"
+hdfs_default_name: "hdfs://{{ hdfs_nameservices if hdfs_ha_enabled else hdfs_namenodes[0] + ':8020' }}"
+
+hdfs_hadoop_home: "{{ hadoop.installation_path }}/hadoop"
+hdfs_conf_dir: "{{hdfs_hadoop_home}}/etc/hadoop"
+
+# http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_hive_install.html?scroll=concept_alp_4kl_3q_unique_1
+hiveserver2_heapsize: 1024
+hivemetastore_heapsize: 2048
+hivecli_heapsize: 1024
+
+package_download_path : "/tmp"
+java:
+  version: 8u152
+  installation_path: /usr/java/jdk1.8.0_152
+  build: b16
+  platform: linux-x64
+  priority: 100
+  download_mirror: http://download.oracle.com/otn-pub/java/jdk
+  download_cookies: "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" 
+  oracle_java_hash: aa0333dd3019491ca4f6ddbe78cdb6d0
+  oracle_java_rpm_validate_certs: no
+  oracle_java_download_timeout: 10

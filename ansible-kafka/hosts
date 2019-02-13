@@ -1,0 +1,11 @@
+# These are your kafka cluster nodes
+[kafka_servers]
+172.16.56.240 kafka_broker_id=1 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.242 kafka_broker_id=2 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.244 kafka_broker_id=3 ansible_ssh_user=root ansible_ssh_pass="password"
+#
+# These are your zookeeper cluster nodes
+[zk_servers]
+172.16.56.240 zk_id=1 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.242 zk_id=2 ansible_ssh_user=root ansible_ssh_pass="password"
+172.16.56.244 zk_id=3 ansible_ssh_user=root ansible_ssh_pass="password"
