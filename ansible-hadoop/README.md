@@ -1,4 +1,4 @@
-# ansible-kafka 
+# ansible-hadoop
 
 Create Kafka cluster with Zookeeper quorum via Ansible over CentOS*.
 
