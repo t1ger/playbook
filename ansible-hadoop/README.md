@@ -1,6 +1,6 @@
 # ansible-hadoop
 
-Create Kafka cluster with Zookeeper quorum via Ansible over CentOS*.
+Create hadoop cluster and hbase、 hive  via Ansible over CentOS*.
 
 ## Usage
 
