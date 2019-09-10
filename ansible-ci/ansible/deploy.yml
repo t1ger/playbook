@@ -1,0 +1,138 @@
+---
+#check
+- name: chekck
+  hosts: all
+  user: gitlab-runner
+
+  tasks:
+  - name: Failing if BUILD_PATH is not defined
+    fail:
+      msg: "Missing BUILD_PATH variable"
+    run_once: true
+    delegate_to: localhost
+    when: BUILD_PATH is undefined or BUILD_PATH|trim == ''
+    
+  - name: Fail if DEPLOY_DIR is not defined
+    fail:
+      msg: "Missing DEPLOY_DIR variable"
+    run_once: true
+    delegate_to: localhost
+    when: DEPLOY_DIR is undefined or DEPLOY_DIR|trim == ''
+
+  - name: Failing if CI_COMMIT_SHA is not defined
+    fail:
+      msg: "Missing CI_COMMIT_SHA variable"
+    run_once: true
+    delegate_to: localhost
+    when: CI_COMMIT_SHA is undefined or CI_COMMIT_SHA|trim == ''
+
+  - name: Failing if GITLAB_USER_ID is not defined
+    fail:
+      msg: "Missing GITLAB_USER_ID variable"
+    run_once: true
+    delegate_to: localhost
+    when: GITLAB_USER_ID is undefined or GITLAB_USER_ID|trim == ''
+
+  - name: Failing if GIT_LAST_COMMIT_MSG is not defined
+    fail:
+      msg: "Missing GIT_LAST_COMMIT_MSG variable"
+    run_once: true
+    delegate_to: localhost
+    when: GIT_LAST_COMMIT_MSG is undefined or GIT_LAST_COMMIT_MSG|trim == ''
+
+  - name: Check if project code has been pushed here
+    stat: path={{ BUILD_PATH }}
+    register: deploy_path
+    run_once: true
+    delegate_to: localhost
+    check_mode: no
+
+  - name: Failing if project code has not been pushed
+    fail:
+      msg: "Code has not been pushed to deploy server"
+    run_once: true
+    delegate_to: localhost
+    when: deploy_path.stat.exists == false
+
+- name: handlers projectname
+  hosts: all
+  user: gitlab-runner
+  tasks:
+    - name: Check if project exists
+      stat: path={{DEPLOY_DIR}}/{{ CI_COMMIT_SHA }}
+      register: project_expected_commit
+      check_mode: no
+
+    - name: copy build
+      synchronize:
+        src: "{{ BUILD_PATH }}"
+        dest: "{{DEPLOY_DIR}}/{{ CI_COMMIT_SHA }}"
+        archive: yes
+        delete: yes
+        owner: no # don't preserve owner
+        group: no # don't preserve group
+        verify_host: no
+      diff: no
+      when: project_expected_commit.stat.exists == false
+
+    - name: Remember current /current link
+      stat:
+        path: "{{DEPLOY_DIR}}/current"
+      register: project_before_current_link
+
+    - name: Link /current to latest build
+      file:
+        src: "{{DEPLOY_DIR}}/{{ CI_COMMIT_SHA }}"
+        dest: "{{DEPLOY_DIR}}/current"
+        state: link
+        
+    
+    - name: Send email notification
+      mail:
+        host: smtp.gmail.com
+        port: 587
+        to: "{{ MAIL_LIST }}"
+        
+        subject: '{{ CI_JOB_NAME }} deployed from Gitlab CI'
+        body:
+          '  Project deployed from Gitlab CI
+             
+          
+             Environment: "{{ CI_ENVIRONMENT_NAME }}"
+             
+             Git branch/tag: "{{ CI_COMMIT_REF_NAME }}"
+             
+             Hosts: "{{ ansible_play_hosts|join(",") }}"
+             
+             Git commit hash: "{{ CI_COMMIT_SHA }}"
+             
+             Deploying user: "{{ GITLAB_USER_EMAIL }} (id:{{ GITLAB_USER_ID }})"
+             
+             CI Runner: "{{ CI_RUNNER_DESCRIPTION }}"
+             
+             Last commit message: "{{ GIT_LAST_COMMIT_MSG }}"
+             
+             Pipeline: "{{ CI_PROJECT_URL }}/pipelines/{{ CI_PIPELINE_ID }}"
+       '
+      delegate_to: localhost
+      run_once: true
+      
+    - name: Get deprecated project versions (older than 5 minutes)
+      shell: >
+        find {{DEPLOY_DIR}} -maxdepth 1 -mindepth 1 -mmin +5
+        | grep -v '{{DEPLOY_DIR}}/current'
+        | grep -v '{{DEPLOY_DIR}}/{{ project_before_current_link.stat.lnk_target | basename }}'
+        | grep -v `readlink {{DEPLOY_DIR}}/current`
+      register: project_deprecated_versions
+      ignore_errors: yes # because rc == 1 if no file is found
+      check_mode: no
+      
+    - name: project versions to delete
+      debug: msg="{{ project_deprecated_versions.stdout.split('\n') }}"
+      check_mode: no
+      
+    - name: Delete deprecated project versions
+      file: path="{{ item }}" state=absent
+      with_items: "{{ project_deprecated_versions.stdout.split('\n') }}"
+      diff: no
+      when: project_deprecated_versions.rc == 0
